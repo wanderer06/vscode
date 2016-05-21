@@ -60,8 +60,8 @@ define([
 
 	'vs/workbench/parts/terminal/electron-browser/terminal.contribution',
 
-	'vs/workbench/parts/markdown/browser/markdown.contribution',
-	'vs/workbench/parts/markdown/browser/markdownActions.contribution',
+	// 'vs/workbench/parts/markdown/browser/markdown.contribution',
+	// 'vs/workbench/parts/markdown/browser/markdownActions.contribution',
 
 	'vs/workbench/browser/workbench',
 
