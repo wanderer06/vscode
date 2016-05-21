@@ -10,6 +10,7 @@ const extensions = [
 	'vscode-api-tests',
 	'vscode-colorize-tests',
 	'json',
+	'markdown',
 	'typescript',
 	'php',
 	'javascript'
