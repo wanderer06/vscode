@@ -7,7 +7,7 @@
 import * as assert from 'assert';
 import {Model} from 'vs/editor/common/model/model';
 import {IFoldingRange} from 'vs/editor/contrib/folding/common/foldingRange';
-import {computeRanges, limitByIndent, computeIndentLevel} from 'vs/editor/contrib/folding/common/indentFoldStrategy';
+import {computeRanges, limitByIndent, computeIndentLevel, checkLineIsImport} from 'vs/editor/contrib/folding/common/indentFoldStrategy';
 
 suite('Indentation Folding', () => {
 	function assertRanges(lines: string[], tabSize: number, expected:IFoldingRange[]): void {
@@ -140,5 +140,56 @@ suite('Indentation Folding', () => {
 		assert.equal(computeIndentLevel('\t Hello', 4), 5);
 		assert.equal(computeIndentLevel('\t \tHello', 4), 8);
 	});
+
+	test('Fold imports with indent 0', () => {
+		assertRanges([
+			'import "A" from "module-a";',
+			'import "B" from "module-b";',
+			'import "C" from "module-c";',
+			'import "D" from "module-d";'
+		], 0, [r(1, 4, 0)]);
+	});
+
+	test('Fold imports with indent 2', () => {
+		assertRanges([
+			'  import "A" from "module-a";',
+			'  import "B" from "module-b";',
+			'  import "C" from "module-c";',
+			'  import "D" from "module-d";'
+		], 2, [r(1, 4, 0)]);
+	});
+
+	test('Fold imports with random indent', () => {
+		assertRanges([
+			'  import "A" from "module-a";',
+			'import "B" from "module-b";',
+			'   import "C" from "module-c";',
+			'         import "D" from "module-d";'
+		], 2, [r(1, 4, 0)]);
+	});
+
+	test('Fold imports groups', () => {
+		assertRanges([
+			'import "A" from "module-a";',
+			'import "B" from "module-b";',
+			'',
+			'import "C" from "module-c";',
+			'',
+			'import "D" from "module-d";',
+			'import "E" from "module-e";'
+		], 2, [r(1, 2, 0), r(6,7,0)]);
+	});
+
+	test('Fold different import syntax', () => {
+		assert.equal(checkLineIsImport('import Foo from "module-foo";'), true);
+		assert.equal(checkLineIsImport('import * as A from "module-a";'), true);
+		assert.equal(checkLineIsImport('import { B } from "module-b";'), true);
+		assert.equal(checkLineIsImport('import { C as foo } from "module-c"'), true);
+		assert.equal(checkLineIsImport('import { foo , bar } from "module-d";'), true);
+		assert.equal(checkLineIsImport('import { foo , bar as baz } from "module-e";'), true);
+		assert.equal(checkLineIsImport('import foo, * as F from "module-f";'), true);
+		assert.equal(checkLineIsImport('import "module-g"'), true);
+	});
+
 
 });

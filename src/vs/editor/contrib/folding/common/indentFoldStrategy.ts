@@ -11,12 +11,36 @@ import {IFoldingRange} from 'vs/editor/contrib/folding/common/foldingRange';
 export function computeRanges(model: IModel, tabSize: number, minimumRangeSize: number = 1): IFoldingRange[] {
 
 	let result: IFoldingRange[] = [];
+	let importsRegions: IFoldingRange[] = [];
 
 	let previousRegions: { indent: number, line: number }[] = [];
+	let [ importRegionStart, importRegionEnd ]: [ number, number ]  = [ -1, -1 ];
 	previousRegions.push({ indent: -1, line: model.getLineCount() + 1 }); // sentinel, to make sure there's at least one entry
 
 	for (let line = model.getLineCount(); line > 0; line--) {
 		let indent = computeIndentLevel(model.getLineContent(line), tabSize);
+		let isImportLine = checkLineIsImport(model.getLineContent(line));
+
+		if (isImportLine) {
+			if (importRegionStart === -1) {
+				importRegionStart = line;
+			}
+			importRegionEnd = line;
+			if (line !== 1) {
+				// skip calculating indent region for import line
+				continue;
+			}
+		}
+		// push imports region if valid
+		if (importRegionStart - importRegionEnd >= minimumRangeSize) {
+			importsRegions.push({
+				startLineNumber: importRegionEnd, // swap
+				endLineNumber: importRegionStart,
+				indent: 0
+			});
+		}
+		importRegionEnd = importRegionStart = -1; // reset counters
+
 		if (indent === -1) {
 			continue; // only whitespace
 		}
@@ -43,6 +67,7 @@ export function computeRanges(model: IModel, tabSize: number, minimumRangeSize: 
 			previousRegions.push({ indent, line });
 		}
 	}
+	result.push(...importsRegions); // add import folds
 	return result.reverse();
 }
 
@@ -65,6 +90,13 @@ export function computeIndentLevel(line: string, tabSize: number): number {
 		return -1; // line only consists of whitespace
 	}
 	return indent;
+}
+
+/**
+ * Detect if line starts with import keyword
+ */
+export function checkLineIsImport(line: string): boolean {
+	return line.trim().substr(0, 6) === 'import';
 }
 
 /**
